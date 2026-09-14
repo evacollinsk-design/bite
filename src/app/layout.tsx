@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
-import { FamilyProvider } from "@/context/FamilyContext";
+import { AppProviders } from "@/components/AppProviders";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-body)]">
-        <FamilyProvider>{children}</FamilyProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

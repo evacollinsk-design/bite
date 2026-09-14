@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { BiteLogo } from "@/components/BiteLogo";
 import { useFamily } from "@/context/FamilyContext";
+import { isAuthConfigured } from "@/lib/auth-config";
 import { defaultGoals } from "@/lib/nutrition";
 import type { FamilyMember, MemberRole, NutritionGoals } from "@/lib/types";
 
@@ -28,6 +30,7 @@ type Step = "welcome" | "family" | "goals" | "camera";
 
 export function Onboarding() {
   const { completeOnboarding, skipOnboardingWithDemo } = useFamily();
+  const authOn = isAuthConfigured();
   const [step, setStep] = useState<Step>("welcome");
   const [familyName, setFamilyName] = useState("Our family");
   const [adult, setAdult] = useState<Draft>({
@@ -162,6 +165,7 @@ export function Onboarding() {
               Snap meals for the whole family. We’ll estimate nutrition, ask when unsure, and keep
               language warm — never judgmental.
             </p>
+            {authOn && <OnboardingAccountNote />}
             <label className="mt-8 block space-y-2 text-sm">
               <span className="text-white/55">Household nickname</span>
               <input
@@ -179,13 +183,15 @@ export function Onboarding() {
               >
                 Get started
               </button>
-              <button
-                type="button"
-                onClick={skipOnboardingWithDemo}
-                className="w-full py-2 text-sm font-medium text-white/55 underline-offset-2 hover:underline"
-              >
-                Skip — try demo household
-              </button>
+              {!authOn && (
+                <button
+                  type="button"
+                  onClick={skipOnboardingWithDemo}
+                  className="w-full py-2 text-sm font-medium text-white/55 underline-offset-2 hover:underline"
+                >
+                  Skip — try demo household
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -514,6 +520,23 @@ function FieldLight({
         className="w-full rounded-2xl border border-[#ececec] bg-[#f7f7f7] px-4 py-3 outline-none focus:border-[var(--coral)]"
       />
     </label>
+  );
+}
+
+function OnboardingAccountNote() {
+  const { user } = useUser();
+  const { cloudSyncStatus } = useFamily();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return null;
+  return (
+    <p className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/80">
+      Signed in as <span className="font-semibold text-white">{email}</span>
+      <span className="mt-1 block text-xs text-white/50">
+        {cloudSyncStatus === "error"
+          ? "Cloud sync unavailable — data stays on this device until storage is configured."
+          : "Your household saves to your account as you go."}
+      </span>
+    </p>
   );
 }
 

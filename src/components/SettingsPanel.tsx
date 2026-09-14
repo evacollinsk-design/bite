@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { UserButton } from "@clerk/nextjs";
 import { useFamily } from "@/context/FamilyContext";
+import { isAuthConfigured } from "@/lib/auth-config";
 import { Avatar } from "@/components/Avatar";
 import { HomeLogoButton } from "@/components/HomeLogoButton";
 import { canManagePermissions } from "@/lib/insights";
@@ -34,7 +36,9 @@ export function SettingsPanel({
     resetDemo,
     clearFamilyData,
     activity,
+    cloudSyncStatus,
   } = useFamily();
+  const authOn = isAuthConfigured();
   const [tab, setTab] = useState<SettingsTab>("permissions");
   const canAdmin = canManagePermissions(activeLogger?.permissionLevel);
 
@@ -155,12 +159,33 @@ export function SettingsPanel({
 
       {tab === "privacy" && (
         <section className="space-y-4 rounded-[1.75rem] bg-white/80 p-5 text-sm leading-relaxed text-[var(--muted)]">
+          {authOn && (
+            <div className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--mist)]/60 p-4">
+              <div>
+                <p className="font-semibold text-[var(--ink)]">Account</p>
+                <p className="text-xs">
+                  Sync:{" "}
+                  {cloudSyncStatus === "synced"
+                    ? "Up to date"
+                    : cloudSyncStatus === "syncing"
+                      ? "Saving…"
+                      : cloudSyncStatus === "error"
+                        ? "Sync issue — check Vercel Blob"
+                        : cloudSyncStatus === "local"
+                          ? "This device only"
+                          : "Loading…"}
+                </p>
+              </div>
+              <UserButton />
+            </div>
+          )}
           <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)]">
             Privacy & care
           </h2>
           <p>
-            In this demo, family data stays in your browser (local storage). Children’s profiles,
-            meal photos, and notes are not uploaded unless you add your own AI API key for analysis.
+            {authOn
+              ? "Signed-in households sync encrypted JSON to your account (Vercel Blob). Meal photos are sent to OpenAI only when you log a meal with live AI enabled."
+              : "In local mode, family data stays in your browser (local storage). Children’s profiles, meal photos, and notes are not uploaded unless you add your own AI API key for analysis."}
           </p>
           <p>
             Bite is a supportive logging tool. Nutritional values are <strong>estimates</strong> and

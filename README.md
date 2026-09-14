@@ -27,6 +27,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`. Without a key, Bite uses a realistic demo analyzer.
 
+### Optional accounts & cloud sync
+
+With **Clerk** keys and a **Vercel Blob** token, caregivers sign in and household data (profiles, meals, notes — not raw photos) syncs to the cloud. Without those env vars, Bite runs in **local-only** mode like before.
+
+Copy `.env.example` to `.env.local` and fill in values. On Vercel, add the same variables for Production (and Preview if you want auth on preview URLs).
+
 ## Privacy note
 
-Demo data stays in browser local storage. Nutritional values are estimates only — Bite is not a substitute for a doctor or qualified dietitian.
+Local-only mode keeps data in the browser. Signed-in mode stores household JSON in your Blob store; meal analysis still uses your OpenAI key when configured. Nutritional values are estimates only — Bite is not a substitute for a doctor or qualified dietitian.

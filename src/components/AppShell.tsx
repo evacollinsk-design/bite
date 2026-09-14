@@ -10,9 +10,18 @@ import { InsightsPanel } from "@/components/InsightsPanel";
 import { MealPlanner } from "@/components/MealPlanner";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { Onboarding } from "@/components/Onboarding";
+import { AuthenticatedAppShell } from "@/components/AuthenticatedAppShell";
+import { isAuthConfigured } from "@/lib/auth-config";
 import type { AppTab } from "@/lib/types";
 
 export function AppShell() {
+  if (isAuthConfigured()) {
+    return <AuthenticatedAppShell />;
+  }
+  return <AppShellCore />;
+}
+
+export function AppShellCore() {
   const { ready, onboardingComplete } = useFamily();
   const [tab, setTab] = useState<AppTab>("home");
   const [focusMemberId, setFocusMemberId] = useState<string | null>(null);

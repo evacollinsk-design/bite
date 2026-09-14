@@ -6,9 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useUser } from "@clerk/nextjs";
+import { isAuthConfigured, isCloudStorageConfigured } from "@/lib/auth-config";
+import type { StoredState } from "@/lib/stored-state";
 import type {
   ActivityEvent,
   CaregiverNote,
@@ -34,20 +38,11 @@ import {
 
 const STORAGE_KEY = "bite-family-v2";
 
-interface StoredState {
-  members: FamilyMember[];
-  meals: MealEntry[];
-  notes: CaregiverNote[];
-  activity: ActivityEvent[];
-  waterLogs: WaterLog[];
-  activeLoggerId: string;
-  onboardingComplete: boolean;
-  notificationPrefs: NotificationPrefs;
-  householdName: string;
-}
+export type CloudSyncStatus = "local" | "loading" | "syncing" | "synced" | "error";
 
 interface FamilyContextValue {
   ready: boolean;
+  cloudSyncStatus: CloudSyncStatus;
   onboardingComplete: boolean;
   householdName: string;
   setHouseholdName: (name: string) => void;
@@ -122,8 +117,19 @@ function demoState(): StoredState {
   };
 }
 
-export function FamilyProvider({ children }: { children: ReactNode }) {
+function FamilyProviderBody({
+  children,
+  cloudUserId,
+}: {
+  children: ReactNode;
+  cloudUserId: string | null;
+}) {
   const [ready, setReady] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>(
+    cloudUserId && isCloudStorageConfigured() ? "loading" : "local",
+  );
+  const cloudHydrated = useRef(false);
+  const [localLoaded, setLocalLoaded] = useState(false);
   const [members, setMembers] = useState<FamilyMember[]>(DEMO_FAMILY);
   const [meals, setMeals] = useState<MealEntry[]>(DEMO_MEALS);
   const [notes, setNotes] = useState<CaregiverNote[]>(DEMO_NOTES);
@@ -135,35 +141,148 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [notificationPrefs, setNotificationPrefsState] =
     useState<NotificationPrefs>(defaultNotif);
 
+  const applyStoredState = useCallback((parsed: Partial<StoredState>) => {
+    if (Array.isArray(parsed.members)) {
+      setMembers(parsed.members.map((m) => migrateMember(m)));
+    }
+    if (Array.isArray(parsed.meals)) setMeals(parsed.meals);
+    if (Array.isArray(parsed.notes)) setNotes(parsed.notes);
+    if (Array.isArray(parsed.activity)) setActivity(parsed.activity);
+    if (Array.isArray(parsed.waterLogs)) setWaterLogs(parsed.waterLogs);
+    if (parsed.activeLoggerId) setActiveLoggerId(parsed.activeLoggerId);
+    if (typeof parsed.onboardingComplete === "boolean") {
+      setOnboardingComplete(parsed.onboardingComplete);
+    }
+    if (typeof parsed.householdName === "string" && parsed.householdName.trim()) {
+      setHouseholdNameState(parsed.householdName.trim());
+    }
+    if (parsed.notificationPrefs) {
+      setNotificationPrefsState({ ...defaultNotif, ...parsed.notificationPrefs });
+    }
+  }, []);
+
+  const snapshotState = useCallback(
+    (): StoredState => ({
+      members,
+      meals,
+      notes,
+      activity,
+      waterLogs,
+      activeLoggerId,
+      onboardingComplete,
+      notificationPrefs,
+      householdName,
+    }),
+    [
+      members,
+      meals,
+      notes,
+      activity,
+      waterLogs,
+      activeLoggerId,
+      onboardingComplete,
+      notificationPrefs,
+      householdName,
+    ],
+  );
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<StoredState>;
-        // Accept empty arrays so cleared households don't reload DEMO_FAMILY
-        if (Array.isArray(parsed.members)) {
-          setMembers(parsed.members.map((m) => migrateMember(m)));
-        }
-        if (Array.isArray(parsed.meals)) setMeals(parsed.meals);
-        if (Array.isArray(parsed.notes)) setNotes(parsed.notes);
-        if (Array.isArray(parsed.activity)) setActivity(parsed.activity);
-        if (Array.isArray(parsed.waterLogs)) setWaterLogs(parsed.waterLogs);
-        if (parsed.activeLoggerId) setActiveLoggerId(parsed.activeLoggerId);
-        if (typeof parsed.onboardingComplete === "boolean") {
-          setOnboardingComplete(parsed.onboardingComplete);
-        }
-        if (typeof parsed.householdName === "string" && parsed.householdName.trim()) {
-          setHouseholdNameState(parsed.householdName.trim());
-        }
-        if (parsed.notificationPrefs) {
-          setNotificationPrefsState({ ...defaultNotif, ...parsed.notificationPrefs });
-        }
+        applyStoredState(JSON.parse(raw) as Partial<StoredState>);
       }
     } catch {
       // demo defaults
     }
-    setReady(true);
-  }, []);
+    setLocalLoaded(true);
+    if (!cloudUserId || !isCloudStorageConfigured()) {
+      setReady(true);
+    }
+  }, [applyStoredState, cloudUserId]);
+
+  useEffect(() => {
+    if (!localLoaded || !cloudUserId || !isCloudStorageConfigured()) return;
+    let cancelled = false;
+    cloudHydrated.current = false;
+    setReady(false);
+
+    (async () => {
+      setCloudSyncStatus("loading");
+      try {
+        const res = await fetch("/api/household", { cache: "no-store" });
+        if (cancelled) return;
+        if (res.status === 404) {
+          setCloudSyncStatus("syncing");
+          const seedRes = await fetch("/api/household", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(snapshotState()),
+          });
+          if (!cancelled) {
+            setCloudSyncStatus(seedRes.ok ? "synced" : "error");
+          }
+          cloudHydrated.current = true;
+          setReady(true);
+          return;
+        }
+        if (res.ok) {
+          const cloud = (await res.json()) as Partial<StoredState>;
+          applyStoredState(cloud);
+          setCloudSyncStatus("synced");
+          cloudHydrated.current = true;
+          setReady(true);
+          return;
+        }
+        setCloudSyncStatus("error");
+        cloudHydrated.current = true;
+        setReady(true);
+      } catch {
+        if (!cancelled) {
+          setCloudSyncStatus("error");
+          cloudHydrated.current = true;
+          setReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudUserId, localLoaded, applyStoredState, snapshotState]);
+
+  useEffect(() => {
+    if (!ready || !cloudUserId || !isCloudStorageConfigured() || !cloudHydrated.current) {
+      return;
+    }
+    const timer = window.setTimeout(async () => {
+      setCloudSyncStatus("syncing");
+      try {
+        const res = await fetch("/api/household", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(snapshotState()),
+        });
+        setCloudSyncStatus(res.ok ? "synced" : "error");
+      } catch {
+        setCloudSyncStatus("error");
+      }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [
+    ready,
+    cloudUserId,
+    snapshotState,
+    members,
+    meals,
+    notes,
+    activity,
+    waterLogs,
+    activeLoggerId,
+    onboardingComplete,
+    notificationPrefs,
+    householdName,
+  ]);
 
   useEffect(() => {
     if (!ready) return;
@@ -457,6 +576,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const value = useMemo<FamilyContextValue>(
     () => ({
       ready,
+      cloudSyncStatus,
       onboardingComplete,
       householdName,
       setHouseholdName,
@@ -488,6 +608,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     }),
     [
       ready,
+      cloudSyncStatus,
       onboardingComplete,
       householdName,
       setHouseholdName,
@@ -519,6 +640,19 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   );
 
   return <FamilyContext.Provider value={value}>{children}</FamilyContext.Provider>;
+}
+
+function FamilyProviderWithAuth({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const cloudUserId = isLoaded && isSignedIn && user ? user.id : null;
+  return <FamilyProviderBody cloudUserId={cloudUserId}>{children}</FamilyProviderBody>;
+}
+
+export function FamilyProvider({ children }: { children: ReactNode }) {
+  if (isAuthConfigured()) {
+    return <FamilyProviderWithAuth>{children}</FamilyProviderWithAuth>;
+  }
+  return <FamilyProviderBody cloudUserId={null}>{children}</FamilyProviderBody>;
 }
 
 export function useFamily() {
