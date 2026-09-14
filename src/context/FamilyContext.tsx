@@ -251,7 +251,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
         }
         if (patch.role === "child") {
           next.permissionLevel = undefined;
-        } else if (m.role === "child" && patch.role && patch.role !== "child") {
+        } else if (m.role === "child" && patch.role) {
           next.permissionLevel = next.permissionLevel ?? defaultPermission(patch.role);
         }
         return migrateMember(next);
