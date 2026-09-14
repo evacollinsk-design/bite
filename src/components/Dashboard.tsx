@@ -58,21 +58,37 @@ export function Dashboard({
     return map;
   }, [meals, selectedDay, focusMemberId]);
 
-  const weekMacroSeries = useMemo(() => {
-    return weekDayKeys(selectedDay).map((day) => {
-      const dayMeals = focusMemberId
-        ? mealsForMemberToday(meals, focusMemberId, day)
-        : mealsToday(meals, day);
-      const totals = dailyTotals(dayMeals);
-      return {
-        day,
-        protein: totals.protein,
-        carbs: totals.carbs,
-        fat: totals.fat,
-        fiber: totals.fiber,
-      };
+  const dayMemberMacroSeries = useMemo(() => {
+    const chartMembers = focusMemberId
+      ? members.filter((m) => m.id === focusMemberId)
+      : members;
+    return chartMembers.map((member) => {
+      const dayMeals = [...mealsForMemberToday(meals, member.id, selectedDay)].sort(
+        (a, b) => a.loggedAt.localeCompare(b.loggedAt),
+      );
+      let protein = 0;
+      let carbs = 0;
+      let fat = 0;
+      let fiber = 0;
+      const points = dayMeals.map((meal) => {
+        protein += meal.nutrition.protein;
+        carbs += meal.nutrition.carbs;
+        fat += meal.nutrition.fat;
+        fiber += meal.nutrition.fiber;
+        const logged = new Date(meal.loggedAt);
+        return {
+          id: meal.id,
+          loggedAt: meal.loggedAt,
+          minute: logged.getHours() * 60 + logged.getMinutes(),
+          protein: Math.round(protein),
+          carbs: Math.round(carbs),
+          fat: Math.round(fat),
+          fiber: Math.round(fiber),
+        };
+      });
+      return { member, points };
     });
-  }, [meals, selectedDay, focusMemberId]);
+  }, [meals, selectedDay, focusMemberId, members]);
 
   if (!ready) {
     return <div className="animate-pulse p-6 text-[var(--muted)]">Loading family…</div>;
@@ -146,6 +162,7 @@ export function Dashboard({
         </div>
       </header>
 
+      {/* 1st widget — calorie summary */}
       <section className="home-banner relative overflow-hidden rounded-[1.75rem] px-5 py-4 text-white">
         <div className="hero-glow pointer-events-none absolute inset-0 opacity-70" />
         <div className="relative flex items-center justify-between gap-3">
@@ -169,17 +186,8 @@ export function Dashboard({
         </div>
       </section>
 
-      <section className="section-in space-y-3 rounded-[1.5rem] bg-white/70 p-4 backdrop-blur-sm">
-        <WeekCalendar
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
-          range={range}
-          onRangeChange={setRange}
-          activityByDay={activityByDay}
-        />
-      </section>
-
-      <section className="section-in space-y-3" style={{ animationDelay: "60ms" }}>
+      {/* 2nd widget — family */}
+      <section className="section-in space-y-3" style={{ animationDelay: "40ms" }}>
         <div className="flex items-center justify-between px-1">
           <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)]">
             Family
@@ -213,7 +221,51 @@ export function Dashboard({
         </div>
       </section>
 
+      <section className="section-in" style={{ animationDelay: "80ms" }}>
+        <MacroLineChart
+          memberSeries={dayMemberMacroSeries}
+          caption={focusMember ? focusMember.name : "Household"}
+        />
+      </section>
+
       <section className="section-in space-y-3" style={{ animationDelay: "100ms" }}>
+        <div className="flex items-baseline justify-between px-1">
+          <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)]">
+            Bites
+          </h2>
+          <span className="text-xs font-medium text-[var(--muted)]">
+            {dayMealsSorted.length} logged
+          </span>
+        </div>
+        {dayMealsSorted.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-[var(--line)] px-4 py-8 text-center text-sm text-[var(--muted)]">
+            No bites yet — snap a plate.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {dayMealsSorted.slice(0, 10).map((meal, i) => {
+              const member = members.find((m) => m.id === meal.memberId);
+              return (
+                <li key={meal.id} style={{ animationDelay: `${i * 40}ms` }}>
+                  <BiteCard meal={meal} member={member} showMember={!focusMember} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="section-in space-y-3 rounded-[1.5rem] bg-white/70 p-4 backdrop-blur-sm">
+        <WeekCalendar
+          selectedDay={selectedDay}
+          onSelectDay={setSelectedDay}
+          range={range}
+          onRangeChange={setRange}
+          activityByDay={activityByDay}
+        />
+      </section>
+
+      <section className="section-in space-y-3" style={{ animationDelay: "120ms" }}>
         <MacroSummaryChips
           protein={displayTotals.protein}
           carbs={displayTotals.carbs}
@@ -248,41 +300,6 @@ export function Dashboard({
           ))}
         </section>
       )}
-
-      <section className="section-in space-y-3" style={{ animationDelay: "140ms" }}>
-        <div className="flex items-baseline justify-between px-1">
-          <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--ink)]">
-            Bites
-          </h2>
-          <span className="text-xs font-medium text-[var(--muted)]">
-            {dayMealsSorted.length} logged
-          </span>
-        </div>
-        {dayMealsSorted.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[var(--line)] px-4 py-8 text-center text-sm text-[var(--muted)]">
-            No bites yet — snap a plate.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {dayMealsSorted.slice(0, 10).map((meal, i) => {
-              const member = members.find((m) => m.id === meal.memberId);
-              return (
-                <li key={meal.id} style={{ animationDelay: `${i * 40}ms` }}>
-                  <BiteCard meal={meal} member={member} showMember={!focusMember} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section className="section-in" style={{ animationDelay: "180ms" }}>
-        <MacroLineChart
-          series={weekMacroSeries}
-          selectedDay={selectedDay}
-          caption={focusMember ? focusMember.name : "Household"}
-        />
-      </section>
 
       {allergyList.length > 0 && (
         <section className="flex gap-2 overflow-x-auto pb-1">

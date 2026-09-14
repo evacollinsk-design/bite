@@ -16,13 +16,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "text and nutrition required" }, { status: 400 });
     }
 
-    const ai = await clarifyWithOpenAI(items, nutrition, text, preferredLanguage);
-    if (ai) {
-      return NextResponse.json({ ...ai, source: "openai" });
+    const { result, error } = await clarifyWithOpenAI(
+      items,
+      nutrition,
+      text,
+      preferredLanguage,
+    );
+    if (result) {
+      return NextResponse.json({
+        ...result,
+        source: "openai",
+        model: process.env.OPENAI_MODEL || "gpt-4o",
+      });
     }
 
     const mock = clarifyFromText(items, nutrition, text);
-    return NextResponse.json({ ...mock, source: "demo" });
+    return NextResponse.json({
+      ...mock,
+      source: "demo",
+      reason: error ?? "openai_unavailable",
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to clarify meal" }, { status: 500 });

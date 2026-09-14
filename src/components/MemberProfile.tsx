@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFamily } from "@/context/FamilyContext";
 import { Avatar } from "@/components/Avatar";
 import { BiteCard, MacroSummaryChips } from "@/components/BiteCard";
@@ -29,7 +29,14 @@ import {
   defaultPersonality,
   resolvePersonality,
 } from "@/lib/pixelCharacter";
-import type { Personality } from "@/lib/types";
+import type { MemberRole, Personality } from "@/lib/types";
+
+const ROLES: MemberRole[] = ["parent", "child", "caretaker", "grandparent"];
+const LANGS = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "hinglish", label: "Hinglish" },
+];
 
 export function MemberProfile({
   memberId,
@@ -59,6 +66,10 @@ export function MemberProfile({
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [range, setRange] = useState<ReportRange>("daily");
   const [noteText, setNoteText] = useState("");
+  const [name, setName] = useState("");
+  const [age, setAge] = useState(0);
+  const [role, setRole] = useState<MemberRole>("child");
+  const [language, setLanguage] = useState("en");
   const [allergies, setAllergies] = useState("");
   const [prefs, setPrefs] = useState("");
   const [avoid, setAvoid] = useState("");
@@ -70,9 +81,18 @@ export function MemberProfile({
   const [waterGoal, setWaterGoal] = useState(0);
   const [personality, setPersonality] = useState<Personality>("playful");
   const [savedFlash, setSavedFlash] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const hydratedId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!member) return;
+    // Re-hydrate when opening a different member (or first mount)
+    if (hydratedId.current === member.id && dirty) return;
+    hydratedId.current = member.id;
+    setName(member.name);
+    setAge(member.age);
+    setRole(member.role);
+    setLanguage(member.preferredLanguage || "en");
     setAllergies(member.allergies.join(", "));
     setPrefs(member.dietaryPreferences.join(", "));
     setAvoid(member.foodsToAvoid.join(", "));
@@ -85,7 +105,72 @@ export function MemberProfile({
     setPersonality(
       member.personality ?? defaultPersonality(member.name, member.role, member.age),
     );
-  }, [member]);
+    setDirty(false);
+  }, [member, dirty]);
+
+  function markDirty<T>(setter: (v: T) => void) {
+    return (v: T) => {
+      setter(v);
+      setDirty(true);
+    };
+  }
+
+  function saveProfile(showFlash = true) {
+    if (!member || !canEdit) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    updateMember(member.id, {
+      name: trimmed,
+      age: Math.max(0, Math.min(120, Number(age) || 0)),
+      role,
+      preferredLanguage: language,
+      allergies: splitList(allergies),
+      dietaryPreferences: splitList(prefs),
+      foodsToAvoid: splitList(avoid),
+      personality,
+      nutritionGoals: {
+        ...member.nutritionGoals,
+        protein,
+        carbs,
+        fat,
+        fiber,
+        calories,
+        waterGlasses: waterGoal,
+      },
+      dailyCalorieTarget: calories,
+    });
+    setDirty(false);
+    if (showFlash) {
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 1600);
+    }
+  }
+
+  // Autosave individual profile edits to localStorage via context
+  useEffect(() => {
+    if (!canEdit || !dirty || !member) return;
+    const t = window.setTimeout(() => saveProfile(true), 650);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    canEdit,
+    dirty,
+    member?.id,
+    name,
+    age,
+    role,
+    language,
+    allergies,
+    prefs,
+    avoid,
+    protein,
+    carbs,
+    fat,
+    fiber,
+    calories,
+    waterGoal,
+    personality,
+  ]);
 
   const activityByDay = useMemo(() => {
     if (!member) return {};
@@ -131,27 +216,6 @@ export function MemberProfile({
   const isToday = selectedDay === todayKey();
   const sortedMeals = [...dayMeals].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
 
-  function saveProfile() {
-    updateMember(member!.id, {
-      allergies: splitList(allergies),
-      dietaryPreferences: splitList(prefs),
-      foodsToAvoid: splitList(avoid),
-      personality,
-      nutritionGoals: {
-        ...member!.nutritionGoals,
-        protein,
-        carbs,
-        fat,
-        fiber,
-        calories,
-        waterGlasses: waterGoal,
-      },
-      dailyCalorieTarget: calories,
-    });
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1600);
-  }
-
   function onAddNote(e: FormEvent) {
     e.preventDefault();
     if (!noteText.trim() || !canNote) return;
@@ -161,13 +225,23 @@ export function MemberProfile({
 
   return (
     <div className="space-y-6 pb-28">
-      <button
-        type="button"
-        onClick={onBack}
-        className="btn-bounce inline-flex items-center gap-1 text-sm font-semibold text-[var(--forest-deep)]"
-      >
-        ← Family
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (dirty && canEdit) saveProfile(false);
+            onBack();
+          }}
+          className="btn-bounce inline-flex items-center gap-1 text-sm font-semibold text-[var(--forest-deep)]"
+        >
+          ← Family
+        </button>
+        {canEdit ? (
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
+            {savedFlash ? "Saved" : dirty ? "Saving…" : "Auto-saves"}
+          </span>
+        ) : null}
+      </div>
 
       <header
         className="profile-hero relative overflow-hidden rounded-[1.75rem] px-5 pb-6 pt-6 text-white"
@@ -178,7 +252,7 @@ export function MemberProfile({
         <div className="hero-glow pointer-events-none absolute inset-0" />
         <div className="relative flex items-center gap-4">
           <Avatar
-            member={{ ...member, personality }}
+            member={{ ...member, name, age, role, personality }}
             size={88}
             className="ring-4 ring-white/35"
           />
@@ -187,16 +261,71 @@ export function MemberProfile({
               {PERSONALITY_LABELS[resolvedPersonality]}
             </p>
             <h1 className="brand-pop font-[family-name:var(--font-display)] text-4xl tracking-tight">
-              {member.name}
+              {name || member.name}
             </h1>
             <p className="mt-1 text-sm text-white/85">
-              {roleLabel(member.role)} · {member.age}y ·{" "}
-              {ageBandLabel(ageBandForAge(member.age))}
+              {roleLabel(role)} · {age}y · {ageBandLabel(ageBandForAge(age))}
               {member.permissionLevel ? ` · ${permissionLabel(member.permissionLevel)}` : ""}
             </p>
           </div>
         </div>
       </header>
+
+      {canEdit ? (
+        <section className="section-in space-y-3 rounded-[1.75rem] bg-white/80 p-5">
+          <h2 className="font-[family-name:var(--font-display)] text-xl">Profile</h2>
+          <label className="block space-y-1 text-sm">
+            <span className="text-[var(--muted)]">Name</span>
+            <input
+              value={name}
+              onChange={(e) => markDirty(setName)(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--line)] px-4 py-3"
+              placeholder="Name"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="space-y-1 text-sm">
+              <span className="text-[var(--muted)]">Age</span>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                value={age}
+                onChange={(e) => markDirty(setAge)(Number(e.target.value))}
+                className="w-full rounded-2xl border border-[var(--line)] px-4 py-3"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-[var(--muted)]">Role</span>
+              <select
+                value={role}
+                onChange={(e) => markDirty(setRole)(e.target.value as MemberRole)}
+                className="w-full rounded-2xl border border-[var(--line)] px-4 py-3"
+              >
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {roleLabel(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="block space-y-1 text-sm">
+            <span className="text-[var(--muted)]">Preferred language</span>
+            <select
+              value={language}
+              onChange={(e) => markDirty(setLanguage)(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--line)] px-4 py-3"
+            >
+              {LANGS.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
+      ) : null}
 
       <section className="section-in space-y-3 rounded-[1.5rem] bg-white/70 p-4">
         <WeekCalendar
@@ -215,7 +344,7 @@ export function MemberProfile({
               {range === "weekly" ? "Week avg" : isToday ? "Today" : "Day"}
             </p>
             <h2 className="font-[family-name:var(--font-display)] text-2xl text-[var(--ink)]">
-              {member.name}&apos;s bites
+              {(name || member.name)}&apos;s bites
             </h2>
           </div>
           <CalorieRing
@@ -329,7 +458,7 @@ export function MemberProfile({
               key={p}
               type="button"
               disabled={!canEdit}
-              onClick={() => setPersonality(p)}
+              onClick={() => markDirty(setPersonality)(p)}
               className={`btn-bounce rounded-2xl px-3 py-1.5 text-xs font-bold disabled:opacity-40 ${
                 personality === p
                   ? "bg-[var(--forest)] text-white"
@@ -352,7 +481,7 @@ export function MemberProfile({
           <input
             value={allergies}
             disabled={!canEdit}
-            onChange={(e) => setAllergies(e.target.value)}
+            onChange={(e) => markDirty(setAllergies)(e.target.value)}
             className="w-full rounded-2xl border border-[var(--line)] px-4 py-3 disabled:opacity-50"
             placeholder="peanuts, dairy…"
           />
@@ -362,7 +491,7 @@ export function MemberProfile({
           <input
             value={prefs}
             disabled={!canEdit}
-            onChange={(e) => setPrefs(e.target.value)}
+            onChange={(e) => markDirty(setPrefs)(e.target.value)}
             className="w-full rounded-2xl border border-[var(--line)] px-4 py-3 disabled:opacity-50"
             placeholder="mild spices, vegetarian-friendly…"
           />
@@ -372,7 +501,7 @@ export function MemberProfile({
           <input
             value={avoid}
             disabled={!canEdit}
-            onChange={(e) => setAvoid(e.target.value)}
+            onChange={(e) => markDirty(setAvoid)(e.target.value)}
             className="w-full rounded-2xl border border-[var(--line)] px-4 py-3 disabled:opacity-50"
           />
         </label>
@@ -384,20 +513,25 @@ export function MemberProfile({
       >
         <h2 className="font-[family-name:var(--font-display)] text-xl">Goals</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Num label="Calories" value={calories} set={setCalories} disabled={!canEdit} />
-          <Num label="Protein (g)" value={protein} set={setProtein} disabled={!canEdit} />
-          <Num label="Carbs (g)" value={carbs} set={setCarbs} disabled={!canEdit} />
-          <Num label="Fats (g)" value={fat} set={setFat} disabled={!canEdit} />
-          <Num label="Fiber (g)" value={fiber} set={setFiber} disabled={!canEdit} />
-          <Num label="Water (glasses)" value={waterGoal} set={setWaterGoal} disabled={!canEdit} />
+          <Num label="Calories" value={calories} set={markDirty(setCalories)} disabled={!canEdit} />
+          <Num label="Protein (g)" value={protein} set={markDirty(setProtein)} disabled={!canEdit} />
+          <Num label="Carbs (g)" value={carbs} set={markDirty(setCarbs)} disabled={!canEdit} />
+          <Num label="Fats (g)" value={fat} set={markDirty(setFat)} disabled={!canEdit} />
+          <Num label="Fiber (g)" value={fiber} set={markDirty(setFiber)} disabled={!canEdit} />
+          <Num
+            label="Water (glasses)"
+            value={waterGoal}
+            set={markDirty(setWaterGoal)}
+            disabled={!canEdit}
+          />
         </div>
         {canEdit && (
           <button
             type="button"
-            onClick={saveProfile}
+            onClick={() => saveProfile(true)}
             className="btn-bounce w-full rounded-2xl bg-[var(--forest)] py-3 text-sm font-semibold text-white"
           >
-            {savedFlash ? "Saved" : "Save profile"}
+            {savedFlash ? "Saved ✓" : "Save profile now"}
           </button>
         )}
       </section>
@@ -449,8 +583,8 @@ export function MemberProfile({
           className="btn-bounce w-full rounded-2xl bg-[var(--mist)] py-3 text-sm font-bold text-[var(--forest-deep)]"
         >
           {activeLoggerId === member.id
-            ? `Logging as ${member.name}`
-            : `Use ${member.name} to log meals`}
+            ? `Logging as ${name || member.name}`
+            : `Use ${name || member.name} to log meals`}
         </button>
       )}
 

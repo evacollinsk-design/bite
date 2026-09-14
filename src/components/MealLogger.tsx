@@ -7,6 +7,7 @@ import { BiteLoader } from "@/components/BiteLogo";
 import { HomeLogoButton } from "@/components/HomeLogoButton";
 import { VoiceTextInput } from "@/components/VoiceTextInput";
 import { canLogMeals } from "@/lib/insights";
+import { prepareMealImage } from "@/lib/image";
 import { normalizeNutrition, roleLabel } from "@/lib/nutrition";
 import type { AnalysisResult, MealType } from "@/lib/types";
 
@@ -39,6 +40,7 @@ export function MealLogger({
   const [photo, setPhoto] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [source, setSource] = useState("");
+  const [analyzeReason, setAnalyzeReason] = useState<string | null>(null);
   const [clarifyText, setClarifyText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -69,12 +71,14 @@ export function MealLogger({
   async function analyzePhoto(dataUrl: string) {
     setAnalyzing(true);
     setError(null);
+    setAnalyzeReason(null);
     try {
+      const prepared = await prepareMealImage(dataUrl);
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageDataUrl: dataUrl,
+          imageDataUrl: prepared,
           preferredLanguage: member?.preferredLanguage ?? loggerLang,
         }),
       });
@@ -82,6 +86,7 @@ export function MealLogger({
       const data = await res.json();
       setAnalysis(data);
       setSource(data.source ?? "demo");
+      setAnalyzeReason(data.reason ?? null);
       setMemberId(null);
       setStep("assign");
     } catch {
@@ -91,7 +96,7 @@ export function MealLogger({
     }
   }
 
-  function onFile(file: File | null) {
+  async function onFile(file: File | null) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -498,8 +503,17 @@ export function MealLogger({
                 <p className="mt-1 text-sm text-[var(--muted)]">
                   ~{analysis.nutrition.estimatedWeightGrams}g ·{" "}
                   {Math.round(analysis.confidence * 100)}% confidence
-                  {source === "demo" ? " · demo AI" : " · live AI"}
+                  {source === "demo" ? " · demo AI" : " · live AI (OpenAI)"}
                 </p>
+                {source === "demo" ? (
+                  <p className="mt-2 rounded-xl bg-[#fff4e5] px-3 py-2 text-xs font-medium text-[#8a5a00]">
+                    {analyzeReason === "missing_api_key"
+                      ? "OpenAI isn’t configured — add OPENAI_API_KEY to .env.local and restart the app for live plate recognition."
+                      : analyzeReason === "insufficient_quota"
+                        ? "OpenAI key works, but your account has no credits left. Add billing at platform.openai.com → Settings → Billing, then scan again."
+                        : "Showing a demo estimate. Live OpenAI recognition didn’t run — check your API key and try again."}
+                  </p>
+                ) : null}
               </div>
               <div className="grid grid-cols-2 gap-1.5 text-center text-xs font-semibold">
                 <MacroPill tone="lime" label="P" value={`${analysis.nutrition.protein}g`} />

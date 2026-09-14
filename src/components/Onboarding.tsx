@@ -102,7 +102,7 @@ export function Onboarding() {
         dailyCalorieTarget: goals.calories,
       };
     }
-    completeOnboarding(members);
+    completeOnboarding(members, { householdName: familyName });
   }
 
   const stepIndex = useMemo(() => {

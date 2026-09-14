@@ -12,27 +12,122 @@ const FOOD_DB: Array<{
   fruit?: number;
   veg?: number;
 }> = [
-  { keys: ["dal", "daal", "lentil", "दाल"], name: "Dal", per100g: { calories: 116, protein: 9, carbs: 17, fat: 2, fiber: 5, sugar: 1 }, defaultGrams: 150 },
-  { keys: ["roti", "chapati", "रोटी"], name: "Roti", per100g: { calories: 297, protein: 9, carbs: 51, fat: 6, fiber: 4, sugar: 1 }, defaultGrams: 40 },
-  { keys: ["rice", "chawal", "चावल"], name: "Rice", per100g: { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, sugar: 0 }, defaultGrams: 180 },
+  { keys: ["dal", "daal", "lentil", "दाल", "sambar", "sambhar"], name: "Dal", per100g: { calories: 116, protein: 9, carbs: 17, fat: 2, fiber: 5, sugar: 1 }, defaultGrams: 150 },
+  { keys: ["roti", "chapati", "phulka", "रोटी"], name: "Roti", per100g: { calories: 297, protein: 9, carbs: 51, fat: 6, fiber: 4, sugar: 1 }, defaultGrams: 40 },
+  { keys: ["rice", "chawal", "jeera rice", "चावल"], name: "Rice", per100g: { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, sugar: 0 }, defaultGrams: 180 },
   { keys: ["khichdi", "khichri", "खिचड़ी"], name: "Khichdi", per100g: { calories: 120, protein: 4, carbs: 20, fat: 2.5, fiber: 2, sugar: 0.5 }, defaultGrams: 220 },
-  { keys: ["parantha", "paratha", "पराठा", "aloo"], name: "Paratha", per100g: { calories: 320, protein: 7, carbs: 42, fat: 14, fiber: 3, sugar: 1 }, defaultGrams: 80 },
-  { keys: ["sabzi", "sabji", "vegetable", "सब्जी"], name: "Sabzi", per100g: { calories: 85, protein: 2.5, carbs: 10, fat: 4, fiber: 3, sugar: 2 }, defaultGrams: 150, veg: 1 },
+  { keys: ["parantha", "paratha", "पराठा"], name: "Paratha", per100g: { calories: 320, protein: 7, carbs: 42, fat: 14, fiber: 3, sugar: 1 }, defaultGrams: 80 },
+  { keys: ["sabzi", "sabji", "vegetable curry", "सब्जी"], name: "Sabzi", per100g: { calories: 85, protein: 2.5, carbs: 10, fat: 4, fiber: 3, sugar: 2 }, defaultGrams: 150, veg: 1 },
   { keys: ["yogurt", "dahi", "curd", "दही"], name: "Yogurt / Dahi", per100g: { calories: 61, protein: 3.5, carbs: 4.7, fat: 3.3, fiber: 0, sugar: 4.7 }, defaultGrams: 120 },
   { keys: ["chicken", "murgh", "मुर्गी"], name: "Chicken", per100g: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, sugar: 0 }, defaultGrams: 120 },
-  { keys: ["egg", "anda", "अंडा"], name: "Egg", per100g: { calories: 155, protein: 13, carbs: 1.1, fat: 11, fiber: 0, sugar: 0.5 }, defaultGrams: 50 },
+  { keys: ["egg", "anda", "omelette", "omelet", "अंडा"], name: "Egg", per100g: { calories: 155, protein: 13, carbs: 1.1, fat: 11, fiber: 0, sugar: 0.5 }, defaultGrams: 50 },
   { keys: ["banana", "kela", "केला"], name: "Banana", per100g: { calories: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, sugar: 12 }, defaultGrams: 120, fruit: 1 },
   { keys: ["apple", "seb", "सेब"], name: "Apple", per100g: { calories: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, sugar: 10 }, defaultGrams: 180, fruit: 1 },
   { keys: ["oatmeal", "oats", "porridge"], name: "Oatmeal", per100g: { calories: 71, protein: 2.5, carbs: 12, fat: 1.5, fiber: 1.7, sugar: 1 }, defaultGrams: 220 },
   { keys: ["pasta", "noodles", "maggi"], name: "Pasta / Noodles", per100g: { calories: 158, protein: 5.8, carbs: 31, fat: 1.3, fiber: 1.8, sugar: 1 }, defaultGrams: 200 },
   { keys: ["sandwich", "toast"], name: "Sandwich", per100g: { calories: 250, protein: 10, carbs: 30, fat: 10, fiber: 2, sugar: 3 }, defaultGrams: 160, veg: 0.5 },
   { keys: ["salad"], name: "Salad", per100g: { calories: 35, protein: 2, carbs: 5, fat: 1, fiber: 2, sugar: 2 }, defaultGrams: 180, veg: 1.5 },
-  { keys: ["idli"], name: "Idli", per100g: { calories: 110, protein: 3.5, carbs: 22, fat: 0.5, fiber: 1, sugar: 0.5 }, defaultGrams: 80 },
+  { keys: ["idli"], name: "Idli", per100g: { calories: 110, protein: 3.5, carbs: 22, fat: 0.5, fiber: 1, sugar: 0.5 }, defaultGrams: 40 },
   { keys: ["dosa"], name: "Dosa", per100g: { calories: 168, protein: 4, carbs: 28, fat: 4.5, fiber: 1.5, sugar: 0.5 }, defaultGrams: 100 },
   { keys: ["milk", "doodh", "दूध"], name: "Milk", per100g: { calories: 61, protein: 3.2, carbs: 4.8, fat: 3.3, fiber: 0, sugar: 5 }, defaultGrams: 200 },
   { keys: ["paneer"], name: "Paneer", per100g: { calories: 265, protein: 18, carbs: 1.2, fat: 20, fiber: 0, sugar: 0.5 }, defaultGrams: 80 },
   { keys: ["ghee"], name: "Ghee", per100g: { calories: 900, protein: 0, carbs: 0, fat: 100, fiber: 0, sugar: 0 }, defaultGrams: 5 },
+  { keys: ["poha"], name: "Poha", per100g: { calories: 158, protein: 3, carbs: 28, fat: 4, fiber: 2, sugar: 2 }, defaultGrams: 200 },
+  { keys: ["upma"], name: "Upma", per100g: { calories: 140, protein: 3.5, carbs: 22, fat: 4.5, fiber: 2, sugar: 1 }, defaultGrams: 200 },
+  { keys: ["biryani"], name: "Biryani", per100g: { calories: 180, protein: 8, carbs: 24, fat: 6, fiber: 1.5, sugar: 1 }, defaultGrams: 300 },
+  { keys: ["chai", "tea"], name: "Chai", per100g: { calories: 45, protein: 1.5, carbs: 6, fat: 1.8, fiber: 0, sugar: 5 }, defaultGrams: 150 },
+  { keys: ["chutney"], name: "Chutney", per100g: { calories: 120, protein: 2, carbs: 12, fat: 7, fiber: 2, sugar: 4 }, defaultGrams: 30 },
+  { keys: ["papad", "papadum"], name: "Papad", per100g: { calories: 370, protein: 18, carbs: 50, fat: 10, fiber: 8, sugar: 0 }, defaultGrams: 12 },
+  { keys: ["fruit", "mixed fruit", "fruit bowl"], name: "Fruit", per100g: { calories: 60, protein: 0.8, carbs: 15, fat: 0.2, fiber: 2.5, sugar: 12 }, defaultGrams: 150, fruit: 1 },
 ];
+
+function matchFoodEntry(name: string) {
+  const lower = name.toLowerCase();
+  let best: (typeof FOOD_DB)[number] | null = null;
+  let bestLen = 0;
+  for (const food of FOOD_DB) {
+    for (const key of food.keys) {
+      const k = key.toLowerCase();
+      const hit =
+        k.length <= 3
+          ? new RegExp(`(?:^|[^a-z\\u0900-\\u097f])${k}(?:[^a-z\\u0900-\\u097f]|$)`, "i").test(
+              lower,
+            )
+          : lower.includes(k);
+      if (hit && k.length >= bestLen) {
+        best = food;
+        bestLen = k.length;
+      }
+    }
+  }
+  return best;
+}
+
+function parseEstimatedGrams(portion: string, fallback: number): number {
+  const grams = portion.match(/(\d+(?:\.\d+)?)\s*g\b/i);
+  if (grams) return Math.round(Number(grams[1]));
+
+  const count = portion.match(
+    /(\d+(?:\.\d+)?)\s*(roti|rotis|chapati|chapatis|idli|idlis|dosa|dosas|egg|eggs|anda|ande|piece|pieces|paratha|parathas|katori|bowl|cups?)\b/i,
+  );
+  if (count) {
+    const n = Number(count[1]);
+    const unit = count[2].toLowerCase();
+    if (/roti|chapati|paratha/.test(unit)) return Math.round(n * 40);
+    if (/idli/.test(unit)) return Math.round(n * 40);
+    if (/dosa/.test(unit)) return Math.round(n * 100);
+    if (/egg|anda/.test(unit)) return Math.round(n * 50);
+    if (/katori|bowl|cup/.test(unit)) return Math.round(n * fallback);
+    if (/piece/.test(unit)) return Math.round(n * fallback);
+  }
+
+  if (/\bhalf\b|½|aadha/i.test(portion)) return Math.round(fallback * 0.5);
+  return fallback;
+}
+
+/** Prefer reference macros for known foods; keep model names + portion estimates. */
+function groundAnalysis(analysis: AnalysisResult): AnalysisResult {
+  let fruit = 0;
+  let veg = 0;
+  const items = analysis.items.map((item) => {
+    const food = matchFoodEntry(item.name);
+    if (!food) return item;
+    const grams = parseEstimatedGrams(item.portion, food.defaultGrams);
+    const scaled = scale(food.per100g, grams);
+    fruit += food.fruit ?? 0;
+    veg += food.veg ?? 0;
+    return {
+      ...item,
+      calories: scaled.calories,
+      protein: scaled.protein,
+      carbs: scaled.carbs,
+      fat: scaled.fat,
+      fiber: scaled.fiber,
+      sugar: scaled.sugar,
+      portion: item.portion.includes("g")
+        ? item.portion
+        : `${item.portion} (~${grams}g)`,
+      confidence: Math.min(0.95, Math.max(item.confidence, 0.78)),
+    };
+  });
+
+  const nutrition = normalizeNutrition({
+    calories: items.reduce((s, i) => s + i.calories, 0),
+    protein: Math.round(items.reduce((s, i) => s + i.protein, 0) * 10) / 10,
+    carbs: Math.round(items.reduce((s, i) => s + i.carbs, 0) * 10) / 10,
+    fat: Math.round(items.reduce((s, i) => s + i.fat, 0) * 10) / 10,
+    fiber: Math.round(items.reduce((s, i) => s + (i.fiber ?? 0), 0) * 10) / 10,
+    sugar: Math.round(items.reduce((s, i) => s + (i.sugar ?? 0), 0) * 10) / 10,
+    estimatedWeightGrams: items.reduce((s, i) => {
+      const g = parseEstimatedGrams(i.portion, 100);
+      return s + g;
+    }, 0),
+    fruitServings: fruit || analysis.nutrition.fruitServings || 0,
+    vegServings: veg || analysis.nutrition.vegServings || 0,
+  });
+
+  return { ...analysis, items, nutrition };
+}
 
 function scale(per100: Macro, grams: number): FoodItem {
   const f = grams / 100;
@@ -233,15 +328,84 @@ export function clarifyFromText(
   };
 }
 
+function visionModel(): string {
+  return process.env.OPENAI_MODEL || "gpt-4o";
+}
+
+function coerceAnalysis(raw: AnalysisResult): AnalysisResult {
+  const items = (raw.items ?? []).map((item) => ({
+    name: String(item.name || "Food item"),
+    portion: String(item.portion || "1 serving"),
+    calories: Number(item.calories) || 0,
+    protein: Number(item.protein) || 0,
+    carbs: Number(item.carbs) || 0,
+    fat: Number(item.fat) || 0,
+    fiber: Number(item.fiber) || 0,
+    sugar: Number(item.sugar) || 0,
+    confidence: Math.min(1, Math.max(0, Number(item.confidence) || 0.5)),
+  }));
+
+  const nutrition = normalizeNutrition(
+    raw.nutrition ?? {
+      calories: items.reduce((s, i) => s + i.calories, 0),
+      protein: items.reduce((s, i) => s + i.protein, 0),
+      carbs: items.reduce((s, i) => s + i.carbs, 0),
+      fat: items.reduce((s, i) => s + i.fat, 0),
+      fiber: items.reduce((s, i) => s + (i.fiber ?? 0), 0),
+      sugar: items.reduce((s, i) => s + (i.sugar ?? 0), 0),
+      estimatedWeightGrams: 0,
+      fruitServings: 0,
+      vegServings: 0,
+    },
+  );
+
+  const confidence = Math.min(1, Math.max(0, Number(raw.confidence) || 0.55));
+  const needsClarification =
+    Boolean(raw.needsClarification) || confidence < 0.72 || items.length === 0;
+
+  return {
+    items,
+    nutrition,
+    confidence,
+    needsClarification,
+    questions: Array.isArray(raw.questions) ? raw.questions.slice(0, 2) : [],
+    detectedCuisine: raw.detectedCuisine || "",
+    summary: raw.summary || "Meal estimate from photo.",
+    summaryLocal: raw.summaryLocal || raw.summary || "",
+    language: raw.language || "en",
+  };
+}
+
 export async function analyzeWithOpenAI(
   imageDataUrl: string,
   preferredLanguage?: string,
-): Promise<AnalysisResult | null> {
+): Promise<{ result: AnalysisResult | null; error?: string }> {
   const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
+  if (!key) {
+    return { result: null, error: "missing_api_key" };
+  }
 
-  const system = `You are Bite, a warm family nutrition assistant. Never use judgmental words like bad food, cheat meal, or failed goal.
-Analyze the meal photo and return STRICT JSON:
+  const lang = preferredLanguage || "en";
+  const system = `You are Bite, a warm family nutrition assistant for Indian and global home cooking.
+Never use judgmental words like bad food, cheat meal, or failed goal.
+
+TASK: Identify every distinct edible item on the plate/bowl/packaging visible in the photo.
+Estimate cooked/ready-to-eat portions and nutrition for what was actually served.
+
+RULES FOR ACCURACY:
+1. Name specific dishes when possible (e.g. "Aloo paratha", "Dal tadka", "Jeera rice") — not just "Indian food".
+2. Separate sides (dal, sabzi, roti, rice, curd, pickle, papad, salad, fruit). Never merge two foods into one item.
+3. Count visible pieces carefully (rotis, idlis, eggs). Put the count in portion text.
+4. Estimate portion in familiar units AND grams: "2 rotis (~80g)", "1 katori dal (~150g)", "1 bowl rice (~180g)".
+5. Account for oil/ghee if visible (shine, frying) — note uncertainty if unclear.
+6. Use realistic Indian home-cooking macros (not restaurant deep-fried defaults unless the photo looks like that).
+7. If packaging/label text is readable, prefer labeled nutrition when present.
+8. confidence is 0–1 for overall identification. Per-item confidence too. Be honest — unclear photos should be <0.65.
+9. If dish identity, count, oil, or milk fat % is unclear, set needsClarification=true and ask 1–2 short questions with options.
+10. Prefer language "${lang}" for summaryLocal and questionLocal (Hinglish/Hindi OK).
+11. Values are estimates — never claim lab precision. Focus first on correct food names + counts; macros second.
+
+Return STRICT JSON only:
 {
   "items":[{"name":"","portion":"","calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"confidence":0}],
   "nutrition":{"calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"estimatedWeightGrams":0,"fruitServings":0,"vegServings":0},
@@ -251,46 +415,72 @@ Analyze the meal photo and return STRICT JSON:
   "detectedCuisine":"",
   "summary":"",
   "summaryLocal":"",
-  "language":"en"
+  "language":"${lang}"
 }
-Always present values as estimates. If uncertain about dish, oil/ghee, milk fat %, or portion (e.g. one vs two rotis), ask 1-2 simple questions.
-Prefer language ${preferredLanguage || "en"} for summaryLocal / questionLocal.
-Understand Hindi/Hinglish/regional home cooking.`;
+nutrition must equal the sum of items (approx).`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Analyze this meal photo for family nutrition logging." },
-            { type: "image_url", image_url: { url: imageDataUrl } },
-          ],
-        },
-      ],
-    }),
-  });
+  const userText = `Analyze this meal photo for family nutrition logging.
+Look carefully at: dish types, count of pieces (roti/idli/egg), bowl fullness, visible oil/ghee, sides, and any packaging.
+Return the JSON schema from your instructions.`;
 
-  if (!res.ok) {
-    console.error("OpenAI analyze failed", await res.text());
-    return null;
+  async function callOnce(): Promise<AnalysisResult | null> {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: visionModel(),
+        temperature: 0.1,
+        max_tokens: 2200,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText },
+              {
+                type: "image_url",
+                image_url: { url: imageDataUrl, detail: "high" },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("OpenAI analyze failed", res.status, errText);
+      if (
+        errText.includes("insufficient_quota") ||
+        errText.includes("credit_balance_exhausted")
+      ) {
+        throw new Error("insufficient_quota");
+      }
+      throw new Error(`openai_${res.status}`);
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+    const parsed = JSON.parse(content) as AnalysisResult;
+    return coerceAnalysis(parsed);
   }
 
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) return null;
-  const parsed = JSON.parse(content) as AnalysisResult;
-  parsed.nutrition = normalizeNutrition(parsed.nutrition);
-  return parsed;
+  try {
+    let result = await callOnce();
+    if (!result || result.items.length === 0) {
+      result = await callOnce();
+    }
+    if (!result) return { result: null, error: "empty_response" };
+    return { result: groundAnalysis(result) };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "openai_error";
+    return { result: null, error: message };
+  }
 }
 
 export async function clarifyWithOpenAI(
@@ -298,9 +488,9 @@ export async function clarifyWithOpenAI(
   currentNutrition: Nutrition,
   userText: string,
   preferredLanguage?: string,
-): Promise<ClarifyResult | null> {
+): Promise<{ result: ClarifyResult | null; error?: string }> {
   const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
+  if (!key) return { result: null, error: "missing_api_key" };
 
   const lang = detectLanguage(userText);
 
@@ -318,34 +508,41 @@ Detect language, reinterpret the meal, return STRICT JSON:
 }
 Current estimate: ${JSON.stringify({ items: currentItems, nutrition: currentNutrition })}
 Handle phrases like "aloo paratha with very little oil, child ate only half".
-Respond in ${preferredLanguage || lang.code}. Values are estimates. Warm supportive tone.`;
+Respond in ${preferredLanguage || lang.code}. Values are estimates. Warm supportive tone.
+nutrition must match sum of items.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: userText },
-      ],
-    }),
-  });
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: visionModel(),
+        temperature: 0.15,
+        max_tokens: 1600,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userText },
+        ],
+      }),
+    });
 
-  if (!res.ok) {
-    console.error("OpenAI clarify failed", await res.text());
-    return null;
+    if (!res.ok) {
+      console.error("OpenAI clarify failed", await res.text());
+      return { result: null, error: `openai_${res.status}` };
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return { result: null, error: "empty_response" };
+    const parsed = JSON.parse(content) as ClarifyResult;
+    parsed.nutrition = normalizeNutrition(parsed.nutrition ?? emptyNutrition());
+    return { result: parsed };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "openai_error";
+    return { result: null, error: message };
   }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) return null;
-  const parsed = JSON.parse(content) as ClarifyResult;
-  parsed.nutrition = normalizeNutrition(parsed.nutrition ?? emptyNutrition());
-  return parsed;
 }

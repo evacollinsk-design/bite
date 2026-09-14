@@ -43,12 +43,18 @@ interface StoredState {
   activeLoggerId: string;
   onboardingComplete: boolean;
   notificationPrefs: NotificationPrefs;
+  householdName: string;
 }
 
 interface FamilyContextValue {
   ready: boolean;
   onboardingComplete: boolean;
-  completeOnboarding: (members: Omit<FamilyMember, "id" | "avatarColor">[]) => void;
+  householdName: string;
+  setHouseholdName: (name: string) => void;
+  completeOnboarding: (
+    members: Omit<FamilyMember, "id" | "avatarColor">[],
+    opts?: { householdName?: string },
+  ) => void;
   skipOnboardingWithDemo: () => void;
   members: FamilyMember[];
   meals: MealEntry[];
@@ -112,6 +118,7 @@ function demoState(): StoredState {
     activeLoggerId: DEMO_FAMILY[0].id,
     onboardingComplete: false,
     notificationPrefs: defaultNotif,
+    householdName: "Our family",
   };
 }
 
@@ -124,6 +131,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [waterLogs, setWaterLogs] = useState<WaterLog[]>(DEMO_WATER);
   const [activeLoggerId, setActiveLoggerId] = useState(DEMO_FAMILY[0].id);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [householdName, setHouseholdNameState] = useState("Our family");
   const [notificationPrefs, setNotificationPrefsState] =
     useState<NotificationPrefs>(defaultNotif);
 
@@ -132,14 +140,20 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<StoredState>;
-        if (parsed.members?.length) setMembers(parsed.members.map((m) => migrateMember(m)));
-        if (parsed.meals) setMeals(parsed.meals);
-        if (parsed.notes) setNotes(parsed.notes);
-        if (parsed.activity) setActivity(parsed.activity);
-        if (parsed.waterLogs) setWaterLogs(parsed.waterLogs);
+        // Accept empty arrays so cleared households don't reload DEMO_FAMILY
+        if (Array.isArray(parsed.members)) {
+          setMembers(parsed.members.map((m) => migrateMember(m)));
+        }
+        if (Array.isArray(parsed.meals)) setMeals(parsed.meals);
+        if (Array.isArray(parsed.notes)) setNotes(parsed.notes);
+        if (Array.isArray(parsed.activity)) setActivity(parsed.activity);
+        if (Array.isArray(parsed.waterLogs)) setWaterLogs(parsed.waterLogs);
         if (parsed.activeLoggerId) setActiveLoggerId(parsed.activeLoggerId);
         if (typeof parsed.onboardingComplete === "boolean") {
           setOnboardingComplete(parsed.onboardingComplete);
+        }
+        if (typeof parsed.householdName === "string" && parsed.householdName.trim()) {
+          setHouseholdNameState(parsed.householdName.trim());
         }
         if (parsed.notificationPrefs) {
           setNotificationPrefsState({ ...defaultNotif, ...parsed.notificationPrefs });
@@ -162,6 +176,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       activeLoggerId,
       onboardingComplete,
       notificationPrefs,
+      householdName,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
@@ -174,6 +189,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     activeLoggerId,
     onboardingComplete,
     notificationPrefs,
+    householdName,
   ]);
 
   const pushActivity = useCallback((event: Omit<ActivityEvent, "id" | "createdAt">) => {
@@ -230,9 +246,21 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
           next.nutritionGoals = { ...m.nutritionGoals, ...patch.nutritionGoals };
           next.dailyCalorieTarget = next.nutritionGoals.calories;
         }
-        return next;
+        if (typeof patch.dailyCalorieTarget === "number") {
+          next.dailyCalorieTarget = patch.dailyCalorieTarget;
+        }
+        if (patch.role === "child") {
+          next.permissionLevel = undefined;
+        } else if (m.role === "child" && patch.role && patch.role !== "child") {
+          next.permissionLevel = next.permissionLevel ?? defaultPermission(patch.role);
+        }
+        return migrateMember(next);
       }),
     );
+  }, []);
+
+  const setHouseholdName = useCallback((name: string) => {
+    setHouseholdNameState(name.trim() || "Our family");
   }, []);
 
   const removeMember = useCallback(
@@ -361,7 +389,10 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const completeOnboarding = useCallback(
-    (seed: Omit<FamilyMember, "id" | "avatarColor">[]) => {
+    (
+      seed: Omit<FamilyMember, "id" | "avatarColor">[],
+      opts?: { householdName?: string },
+    ) => {
       const built = seed.map((m, i) =>
         migrateMember({
           ...m,
@@ -374,6 +405,9 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       setNotes([]);
       setActivity([]);
       setWaterLogs([]);
+      if (opts?.householdName?.trim()) {
+        setHouseholdNameState(opts.householdName.trim());
+      }
       const admin = built.find((m) => m.permissionLevel === "admin") ?? built[0];
       if (admin) setActiveLoggerId(admin.id);
       setOnboardingComplete(true);
@@ -390,6 +424,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     setWaterLogs(fresh.waterLogs);
     setActiveLoggerId(fresh.activeLoggerId);
     setNotificationPrefsState(fresh.notificationPrefs);
+    setHouseholdNameState(fresh.householdName);
     setOnboardingComplete(true);
   }, []);
 
@@ -402,6 +437,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     setWaterLogs(fresh.waterLogs);
     setActiveLoggerId(fresh.activeLoggerId);
     setNotificationPrefsState(fresh.notificationPrefs);
+    setHouseholdNameState(fresh.householdName);
     setOnboardingComplete(true);
   }, []);
 
@@ -411,6 +447,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     setNotes([]);
     setActivity([]);
     setWaterLogs([]);
+    setHouseholdNameState("Our family");
     setOnboardingComplete(false);
   }, []);
 
@@ -421,6 +458,8 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     () => ({
       ready,
       onboardingComplete,
+      householdName,
+      setHouseholdName,
       completeOnboarding,
       skipOnboardingWithDemo,
       members,
@@ -450,6 +489,8 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     [
       ready,
       onboardingComplete,
+      householdName,
+      setHouseholdName,
       completeOnboarding,
       skipOnboardingWithDemo,
       members,

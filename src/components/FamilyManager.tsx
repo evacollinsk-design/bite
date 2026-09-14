@@ -29,6 +29,7 @@ export function FamilyManager({
 }) {
   const {
     members,
+    householdName,
     addMember,
     activeLogger,
     activeLoggerId,
@@ -85,13 +86,13 @@ export function FamilyManager({
       <header className="space-y-2 px-1">
         {onHome && <HomeLogoButton onHome={onHome} size={34} />}
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--coral)]">
-          Family
+          {householdName || "Family"}
         </p>
         <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--ink)]">
           People who eat here
         </h1>
         <p className="text-[var(--muted)]">
-          Tap a person for their day, meals, and goals. Pixel pals grow with age.
+          Each person has their own saved profile — tap to edit. Changes auto-save on this device.
         </p>
       </header>
 
