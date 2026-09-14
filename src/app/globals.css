@@ -74,10 +74,6 @@ body > * {
   animation: rise-in 0.55s var(--ease-out) both;
 }
 
-.capture-btn {
-  animation: soft-pulse 2.6s ease-in-out infinite;
-}
-
 .btn-bounce {
   transition:
     transform 0.28s var(--bounce),
@@ -120,7 +116,8 @@ body > * {
 
 .home-banner {
   background:
-    linear-gradient(120deg, rgba(13, 159, 110, 0.92) 0%, rgba(255, 193, 7, 0.85) 48%, rgba(255, 61, 127, 0.72) 100%);
+    linear-gradient(128deg, rgba(13, 159, 110, 0.94) 0%, rgba(18, 184, 134, 0.88) 42%, rgba(255, 92, 58, 0.82) 100%);
+  box-shadow: 0 12px 32px -16px rgba(13, 159, 110, 0.45);
 }
 
 @keyframes brand-pop {
@@ -142,18 +139,6 @@ body > * {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes soft-pulse {
-  0%,
-  100% {
-    box-shadow: 0 10px 28px -8px rgba(255, 193, 7, 0.7);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 14px 34px -6px rgba(255, 92, 58, 0.55);
-    transform: scale(1.04);
   }
 }
 
@@ -455,7 +440,6 @@ body > * {
 
 @media (prefers-reduced-motion: reduce) {
   .member-card,
-  .capture-btn,
   .brand-pop,
   .section-in,
   .bite-card,

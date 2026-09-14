@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useFamily } from "@/context/FamilyContext";
 import { Avatar } from "@/components/Avatar";
 import { HomeLogoButton } from "@/components/HomeLogoButton";
+import { LoggerPicker } from "@/components/LoggerPicker";
 import { MemberProfile } from "@/components/MemberProfile";
 import { canEditProfiles } from "@/lib/insights";
 import { calorieTargetForAge, defaultGoals, roleLabel } from "@/lib/nutrition";
@@ -32,8 +33,6 @@ export function FamilyManager({
     householdName,
     addMember,
     activeLogger,
-    activeLoggerId,
-    setActiveLoggerId,
   } = useFamily();
   const [name, setName] = useState("");
   const [age, setAge] = useState(8);
@@ -96,50 +95,46 @@ export function FamilyManager({
         </p>
       </header>
 
+      <LoggerPicker className="rounded-2xl bg-white/80 px-4 py-3 ring-1 ring-[var(--line)]/80" />
+
       <ul className="space-y-2">
         {members.map((m) => (
           <li key={m.id}>
             <button
               type="button"
               onClick={() => openProfile(m.id)}
-              className="flex w-full items-center gap-3 rounded-2xl bg-white/75 px-4 py-3 text-left backdrop-blur-sm"
+              className="flex w-full items-center gap-3 rounded-2xl bg-white/85 px-4 py-3.5 text-left shadow-sm ring-1 ring-[var(--line)]/60"
             >
               <Avatar member={m} size={52} />
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-[var(--ink)]">
-                  {m.name}
-                  {activeLoggerId === m.id && m.role !== "child" && (
-                    <span className="ml-2 text-xs font-semibold text-[var(--forest)]">
-                      logging
-                    </span>
-                  )}
-                </p>
+                <p className="font-bold text-[var(--ink)]">{m.name}</p>
                 <p className="text-sm text-[var(--muted)]">
-                  {roleLabel(m.role)} · {ageBandLabel(ageBandForAge(m.age))} ·{" "}
-                  {m.nutritionGoals.calories} kcal
-                  {m.allergies.length ? ` · ${m.allergies.length} allerg.` : ""}
+                  {roleLabel(m.role)} · {m.age}y · {m.nutritionGoals.calories} kcal
                 </p>
-                <p className="mt-1 text-xs font-semibold text-[var(--forest)]">Open profile →</p>
+                {(m.allergies.length > 0 || m.foodsToAvoid.length > 0) && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {m.allergies.map((a) => (
+                      <span
+                        key={`a-${a}`}
+                        className="rounded-full bg-[#ffe8e4] px-2 py-0.5 text-[10px] font-semibold text-[#9b2226]"
+                      >
+                        {a}
+                      </span>
+                    ))}
+                    {m.foodsToAvoid.map((f) => (
+                      <span
+                        key={`f-${f}`}
+                        className="rounded-full bg-[var(--mist)] px-2 py-0.5 text-[10px] font-semibold text-[var(--forest-deep)]"
+                      >
+                        avoid {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              {m.role !== "child" && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveLoggerId(m.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.stopPropagation();
-                      setActiveLoggerId(m.id);
-                    }
-                  }}
-                  className="btn-bounce rounded-full bg-[var(--mist)] px-3 py-1.5 text-xs font-bold text-[var(--forest-deep)]"
-                >
-                  Use
-                </span>
-              )}
+              <span className="shrink-0 text-lg text-[var(--muted)]" aria-hidden>
+                →
+              </span>
             </button>
           </li>
         ))}

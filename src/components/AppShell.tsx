@@ -110,7 +110,7 @@ export function AppShellCore() {
             type="button"
             onClick={() => goTab("log")}
             aria-label="Log meal"
-            className="capture-btn btn-bounce -mt-8 flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] bg-[var(--coral)] text-white shadow-[0_12px_30px_-10px_rgba(255,92,58,0.75)]"
+            className="-mt-9 flex h-[4.25rem] w-[4.25rem] min-h-12 min-w-12 shrink-0 items-center justify-center rounded-[1.35rem] bg-[var(--coral)] text-white shadow-[0_10px_26px_-10px_rgba(255,92,58,0.7)] active:opacity-90"
           >
             <CameraIcon />
           </button>
