@@ -5,6 +5,8 @@ import { useFamily } from "@/context/FamilyContext";
 import { Avatar } from "@/components/Avatar";
 import { BiteLoader } from "@/components/BiteLogo";
 import { HomeLogoButton } from "@/components/HomeLogoButton";
+import { FoodItemChips } from "@/components/FoodItemChips";
+import { LoggerPicker } from "@/components/LoggerPicker";
 import { VoiceTextInput } from "@/components/VoiceTextInput";
 import { canLogMeals } from "@/lib/insights";
 import { prepareMealImage } from "@/lib/image";
@@ -29,7 +31,6 @@ export function MealLogger({
     members,
     activeLogger,
     activeLoggerId,
-    setActiveLoggerId,
     addMeal,
     notificationPrefs,
   } = useFamily();
@@ -43,6 +44,8 @@ export function MealLogger({
   const [analyzeReason, setAnalyzeReason] = useState<string | null>(null);
   const [clarifyText, setClarifyText] = useState("");
   const [caregiverNote, setCaregiverNote] = useState("");
+  const [itemsEdited, setItemsEdited] = useState(false);
+  const [showClarify, setShowClarify] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [analyzing, setAnalyzing] = useState(false);
@@ -87,6 +90,8 @@ export function MealLogger({
       setAnalysis(data);
       setSource(data.source ?? "demo");
       setAnalyzeReason(data.reason ?? null);
+      setItemsEdited(false);
+      setShowClarify(false);
       setMemberId(null);
       setStep("assign");
     } catch {
@@ -189,7 +194,7 @@ export function MealLogger({
         items: analysis.items,
         nutrition: normalizeNutrition(analysis.nutrition),
         confidence: analysis.confidence,
-        clarified: Boolean(clarifyText) || analysis.confidence > 0.8,
+        clarified: itemsEdited || Boolean(clarifyText) || analysis.confidence > 0.8,
         language: analysis.language,
         notes: clarifyText || analysis.summaryLocal || analysis.summary,
         caregiverNote: caregiverNote.trim() || undefined,
@@ -201,6 +206,8 @@ export function MealLogger({
       setMemberId(null);
       setClarifyText("");
       setCaregiverNote("");
+      setItemsEdited(false);
+      setShowClarify(false);
       onLogged?.();
     });
   }
@@ -418,29 +425,7 @@ export function MealLogger({
               ))}
             </ul>
 
-            <div className="mt-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                Logged by
-              </p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {members
-                  .filter((m) => m.role !== "child")
-                  .map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setActiveLoggerId(m.id)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                        activeLoggerId === m.id
-                          ? "bg-[var(--coral)] text-white"
-                          : "bg-[#f2f2f2] text-[var(--muted)]"
-                      }`}
-                    >
-                      {m.name}
-                    </button>
-                  ))}
-              </div>
-            </div>
+            <LoggerPicker className="mt-6 rounded-2xl bg-[#f7f7f7] px-4 py-3" />
           </div>
         </div>
       )}
@@ -491,19 +476,18 @@ export function MealLogger({
                   ].join(" · ")}
                 </p>
               )}
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--coral)]">
-              Estimate
+            <p className="text-sm font-medium text-[var(--muted)]">
+              Best guess — tap anything wrong
             </p>
-            <div className="mt-1 flex items-start justify-between gap-3">
+            <div className="mt-2 flex items-start justify-between gap-3">
               <div>
-                <p className="font-[family-name:var(--font-display)] text-4xl tabular-nums">
+                <p className="font-[family-name:var(--font-display)] text-4xl tabular-nums text-[var(--ink)]">
                   {analysis.nutrition.calories}
-                  <span className="ml-1 text-base text-[var(--muted)]">kcal</span>
+                  <span className="ml-1 text-base text-[var(--muted)]">kcal est.</span>
                 </p>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  ~{analysis.nutrition.estimatedWeightGrams}g ·{" "}
-                  {Math.round(analysis.confidence * 100)}% confidence
-                  {source === "demo" ? " · demo AI" : " · live AI (OpenAI)"}
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  ~{analysis.nutrition.estimatedWeightGrams}g total
+                  {source === "demo" ? " · demo estimate" : ""}
                 </p>
                 {source === "demo" ? (
                   <p className="mt-2 rounded-xl bg-[#fff4e5] px-3 py-2 text-xs font-medium text-[#8a5a00]">
@@ -523,24 +507,22 @@ export function MealLogger({
               </div>
             </div>
 
-            <ul className="mt-4 space-y-2">
-              {analysis.items.map((item, idx) => (
-                <li
-                  key={`${item.name}-${idx}`}
-                  className="flex items-center justify-between border-b border-[#eee] py-2 text-sm last:border-b-0"
-                >
-                  <span>
-                    {item.name}
-                    <span className="text-[var(--muted)]"> · {item.portion}</span>
-                  </span>
-                  <span className="font-bold text-[var(--coral)]">{item.calories}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4">
+              <FoodItemChips
+                analysis={analysis}
+                disabled={!allowed || analyzing}
+                onChange={(next) => {
+                  setItemsEdited(true);
+                  setAnalysis(next);
+                }}
+              />
+            </div>
 
-            <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]">
-              {analysis.summaryLocal || analysis.summary}
-            </p>
+            {(analysis.summaryLocal || analysis.summary) && (
+              <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                {analysis.summaryLocal || analysis.summary}
+              </p>
+            )}
 
             {analysis.needsClarification && analysis.questions.length > 0 && (
               <div className="mt-4 space-y-3 rounded-2xl border border-[var(--citrus)]/50 bg-[#fff8e0] p-4">
@@ -567,22 +549,33 @@ export function MealLogger({
               </div>
             )}
 
-            <div className="mt-4 space-y-3">
-              <p className="text-sm font-semibold">Correct or add detail</p>
-              <VoiceTextInput
-                value={clarifyText}
-                onChange={setClarifyText}
-                preferredLanguage={member?.preferredLanguage ?? loggerLang}
-                placeholder='e.g. "aloo paratha with very little oil, child ate only half"'
-              />
+            <div className="mt-5">
               <button
                 type="button"
-                disabled={!clarifyText.trim() || analyzing || !allowed}
-                onClick={() => void applyClarification(clarifyText)}
-                className="w-full rounded-2xl border-2 border-[var(--ink)] py-3 text-sm font-bold disabled:opacity-40"
+                onClick={() => setShowClarify((v) => !v)}
+                className="flex w-full items-center justify-between rounded-2xl bg-[#f7f7f7] px-4 py-3 text-left text-sm font-semibold text-[var(--ink)]"
               >
-                {analyzing ? "Updating…" : "Apply correction"}
+                <span>More detail (voice or text)</span>
+                <span className="text-[var(--muted)]">{showClarify ? "−" : "+"}</span>
               </button>
+              {showClarify && (
+                <div className="mt-3 space-y-3">
+                  <VoiceTextInput
+                    value={clarifyText}
+                    onChange={setClarifyText}
+                    preferredLanguage={member?.preferredLanguage ?? loggerLang}
+                    placeholder='e.g. "aloo paratha with very little oil, child ate only half"'
+                  />
+                  <button
+                    type="button"
+                    disabled={!clarifyText.trim() || analyzing || !allowed}
+                    onClick={() => void applyClarification(clarifyText)}
+                    className="w-full rounded-2xl border border-[var(--line)] py-3 text-sm font-bold text-[var(--forest-deep)] disabled:opacity-40"
+                  >
+                    {analyzing ? "Updating…" : "Apply with AI"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 space-y-2">

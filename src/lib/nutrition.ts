@@ -2,6 +2,7 @@ import type {
   ActivityEvent,
   CaregiverNote,
   FamilyMember,
+  FoodItem,
   MealEntry,
   Nutrition,
   NutritionGoals,
@@ -81,6 +82,62 @@ export function normalizeNutrition(n: Partial<Nutrition> | undefined): Nutrition
     fruitServings: n?.fruitServings ?? 0,
     vegServings: n?.vegServings ?? 0,
   };
+}
+
+export const LOW_FOOD_CONFIDENCE = 0.65;
+
+export function scaleFoodItem(item: FoodItem, factor: number): FoodItem {
+  const r = (n: number) => Math.round(n * factor * 10) / 10;
+  const portion =
+    factor === 0.5
+      ? `½ ${item.portion.replace(/^½\s*/, "")}`
+      : factor === 2
+        ? `2× ${item.portion}`
+        : item.portion;
+  return {
+    ...item,
+    portion,
+    calories: r(item.calories),
+    protein: r(item.protein),
+    carbs: r(item.carbs),
+    fat: r(item.fat),
+    fiber: item.fiber != null ? r(item.fiber) : undefined,
+    sugar: item.sugar != null ? r(item.sugar) : undefined,
+    confidence: Math.min(1, item.confidence + 0.08),
+  };
+}
+
+export function nutritionFromFoodItems(
+  items: FoodItem[],
+  prior?: Partial<Nutrition>,
+): Nutrition {
+  const base = emptyNutrition();
+  for (const item of items) {
+    base.calories += item.calories;
+    base.protein += item.protein;
+    base.carbs += item.carbs;
+    base.fat += item.fat;
+    base.fiber += item.fiber ?? 0;
+    base.sugar += item.sugar ?? 0;
+  }
+  base.calories = Math.round(base.calories);
+  base.protein = Math.round(base.protein * 10) / 10;
+  base.carbs = Math.round(base.carbs * 10) / 10;
+  base.fat = Math.round(base.fat * 10) / 10;
+  base.fiber = Math.round(base.fiber * 10) / 10;
+  base.sugar = Math.round(base.sugar * 10) / 10;
+  base.estimatedWeightGrams =
+    prior?.estimatedWeightGrams && prior.calories && base.calories
+      ? Math.round((prior.estimatedWeightGrams * base.calories) / prior.calories)
+      : Math.round(base.calories * 0.45);
+  base.fruitServings = prior?.fruitServings ?? 0;
+  base.vegServings = prior?.vegServings ?? 0;
+  return base;
+}
+
+export function averageItemConfidence(items: FoodItem[], fallback = 0.6): number {
+  if (items.length === 0) return fallback;
+  return items.reduce((s, i) => s + i.confidence, 0) / items.length;
 }
 
 export function todayKey(date = new Date()): string {
