@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { isAuthConfigured } from "@/lib/auth-config";
+import { isAuthFullyConfigured } from "@/lib/auth-config";
 
 /**
  * Root cause of production MIDDLEWARE_INVOCATION_FAILED:
@@ -33,7 +33,7 @@ function getClerkHandler(): ClerkHandler {
 }
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
-  if (!isAuthConfigured()) {
+  if (!isAuthFullyConfigured()) {
     return NextResponse.next();
   }
   return getClerkHandler()(req, event);

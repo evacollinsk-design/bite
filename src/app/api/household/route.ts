@@ -1,11 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { isAuthConfigured, isCloudStorageConfigured } from "@/lib/auth-config";
+import { isAuthFullyConfigured, isCloudStorageConfigured } from "@/lib/auth-config";
 import { loadHouseholdFromCloud, saveHouseholdToCloud } from "@/lib/household-cloud";
 import { unwrapState, type StoredState } from "@/lib/stored-state";
 
 export async function GET() {
-  if (!isAuthConfigured()) {
+  if (!isAuthFullyConfigured()) {
     return NextResponse.json({ error: "Auth not configured" }, { status: 503 });
   }
   const { userId } = await auth();
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  if (!isAuthConfigured()) {
+  if (!isAuthFullyConfigured()) {
     return NextResponse.json({ error: "Auth not configured" }, { status: 503 });
   }
   const { userId } = await auth();

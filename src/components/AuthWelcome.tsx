@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { BiteLogo } from "@/components/BiteLogo";
 
 export function AuthWelcome() {
@@ -36,18 +36,22 @@ export function AuthWelcome() {
         </ul>
 
         <div className="mt-auto space-y-3 pt-12">
-          <Link
-            href="/sign-up"
-            className="block w-full rounded-[1.35rem] bg-[var(--coral)] py-4 text-center text-base font-bold text-white"
-          >
-            Create account
-          </Link>
-          <Link
-            href="/sign-in"
-            className="block w-full rounded-[1.35rem] bg-white/10 py-4 text-center text-base font-semibold text-white"
-          >
-            Sign in
-          </Link>
+          <SignUpButton mode="redirect" forceRedirectUrl="/">
+            <button
+              type="button"
+              className="w-full rounded-[1.35rem] bg-[var(--coral)] py-4 text-center text-base font-bold text-white"
+            >
+              Create account
+            </button>
+          </SignUpButton>
+          <SignInButton mode="redirect" forceRedirectUrl="/">
+            <button
+              type="button"
+              className="w-full rounded-[1.35rem] bg-white/10 py-4 text-center text-base font-semibold text-white"
+            >
+              Sign in
+            </button>
+          </SignInButton>
         </div>
       </section>
     </div>
