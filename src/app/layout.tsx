@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import { AppProviders } from "@/components/AppProviders";
@@ -35,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-body)]">
-        <AppProviders>{children}</AppProviders>
+        <ClerkProvider>
+          <AppProviders>{children}</AppProviders>
+        </ClerkProvider>
       </body>
     </html>
   );
